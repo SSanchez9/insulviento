@@ -438,7 +438,7 @@ const GRANDES = [24,31,37]; // casillas dobles
 const ESPECIALES = {24:'Nochebuena',25:'Navidad',31:'Nochevieja',32:'Año Nuevo',37:'Reyes'};
 const COLORES = ['c-rojo','c-verde','c-granate','c-dorado','c-noche'];
 // Modo prueba: con #prueba en el enlace aparece la barra para simular fechas (ella no lo verá)
-const MODO_MAQUETA = true; // versión final: cambiar por  HASH.has('prueba')
+const MODO_MAQUETA = HASH.has('prueba'); // versión final: solo con #prueba en el enlace
 
 /* ================= LÓGICA ================= */
 let simulado = 37; // 37 = 6 de enero → todas desbloqueadas

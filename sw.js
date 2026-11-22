@@ -1,6 +1,6 @@
 // Guarda la app para que funcione sin conexión.
 // Si cambias algo, sube el número de versión para que se actualice en su móvil.
-const CACHE = 'adviento-v19';
+const CACHE = 'adviento-v20';
 const ARCHIVOS = [
   './',
   './index.html',
