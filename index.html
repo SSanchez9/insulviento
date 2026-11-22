@@ -226,20 +226,19 @@
   }
   .card button:active{transform:translateY(2px);box-shadow:0 2px 0 #7a0c1f}
 
-  /* ---------- Puntuación y ranking ---------- */
-  .rate-lbl{margin-top:18px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--rojo);font-weight:800}
-  .hearts{display:flex;justify-content:center;gap:4px;margin-top:6px}
-  .card .hearts button{margin:0;padding:4px;background:none;box-shadow:none;border-radius:8px;font-size:28px;line-height:1;
-    filter:grayscale(1);opacity:.35;transition:transform .15s, opacity .15s, filter .15s}
-  .card .hearts button.on{filter:none;opacity:1}
-  .card .hearts button:active{transform:scale(1.25);box-shadow:none}
+  /* ---------- Ranking (arrastrar para ordenar) ---------- */
   .rank-btn{display:block;margin:-6px auto 18px;border:1px solid var(--dorado);background:rgba(0,0,0,.25);color:var(--dorado-claro);
     border-radius:999px;padding:9px 18px;font:800 14px 'Mulish',sans-serif;cursor:pointer}
   #rank .card{max-height:calc(100vh - 60px);max-height:calc(100dvh - 60px);display:flex;flex-direction:column;padding-top:26px}
   #rank h3{font-family:'Cinzel Decorative',serif;font-weight:900;font-size:24px;color:var(--verde);margin-bottom:4px}
   #rank .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px}
   #rankList{list-style:none;overflow-y:auto;margin:14px -6px 0;padding:0 6px;text-align:left;flex:1}
-  #rankList li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed rgba(94,11,23,.25)}
+  #rankList li{display:flex;gap:10px;align-items:center;padding:10px 6px;border-bottom:1px dashed rgba(94,11,23,.25);
+    background:transparent;border-radius:10px;transition:background .15s, box-shadow .15s;user-select:none;-webkit-user-select:none}
+  #rankList li.arrastrando{background:#fff;box-shadow:0 8px 22px rgba(58,6,16,.28);border-bottom-color:transparent;position:relative;z-index:2}
+  #rankList .asa{margin-left:auto;padding:10px 6px 10px 12px;font-size:22px;color:var(--granate);opacity:.55;cursor:grab;touch-action:none;line-height:1}
+  #rankList li.arrastrando .asa{cursor:grabbing;opacity:1}
+  #rank .ayuda{font-size:12px;margin-top:6px;opacity:.75}
   #rankList .pos{font-family:'Cinzel Decorative',serif;font-weight:900;font-size:20px;color:var(--dorado);min-width:30px;text-align:center}
   #rankList li:nth-child(1) .pos{color:#c9971c;font-size:24px}
   #rankList .txt{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:17px;line-height:1.25}
@@ -366,10 +365,6 @@
     <div class="day" id="mDayLbl">Día</div>
     <div class="bignum" id="mNum">1</div>
     <p class="phrase" id="mPhrase"></p>
-    <div class="rate-lbl">¿Cuánto te ha gustado?</div>
-    <div class="hearts" id="hearts">
-      <button data-v="1" aria-label="1 de 5">❤️</button><button data-v="2" aria-label="2 de 5">❤️</button><button data-v="3" aria-label="3 de 5">❤️</button><button data-v="4" aria-label="4 de 5">❤️</button><button data-v="5" aria-label="5 de 5">❤️</button>
-    </div>
     <button id="mClose">Vale, me lo merezco</button>
   </div>
 </div>
@@ -379,8 +374,9 @@
   <div class="card">
     <h3>Mi ranking</h3>
     <div class="sub" id="rankSub"></div>
+    <div class="ayuda" id="rankAyuda">Mantén pulsado ☰ y arrastra para ordenarlas: arriba la que más te guste.</div>
     <ol id="rankList"></ol>
-    <div id="rankEmpty">Todavía no has puntuado ninguna frase. Ábrelas y dales corazones ❤️</div>
+    <div id="rankEmpty">Todavía no has abierto ninguna casilla. Abre alguna y vuelve aquí 🎄</div>
     <div class="acciones">
       <button id="rankShare">Enviar mi ranking</button>
       <button class="sec" id="rankClose">Cerrar</button>
@@ -510,60 +506,94 @@ function abrirCarta(d){
   document.getElementById('mNum').textContent = numDia(d);
   document.getElementById('mPhrase').textContent = frase(d) || '🎁 Frase en camino… (pendiente de elegir)';
   document.getElementById('mClose').textContent = d===37 ? 'Felices Reyes a ti también' : 'Vale, me lo merezco';
-  cartaDia = d; pintarCorazones();
   document.getElementById('modal').classList.add('show');
 }
 document.getElementById('mClose').onclick = ()=>document.getElementById('modal').classList.remove('show');
 document.getElementById('modal').onclick = e=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('show') };
 
-/* ---- puntuación (1-5 corazones) y ranking ---- */
-const KEY_NOTAS = 'insultiento-notas';
-let mNotas = {};
-const notas = {
-  get(){ try{ return JSON.parse(localStorage.getItem(KEY_NOTAS)||'{}') }catch(e){ return mNotas } },
-  set(v){ mNotas=v; try{ localStorage.setItem(KEY_NOTAS,JSON.stringify(v)) }catch(e){} }
+/* ---- ranking: lista de frases abiertas que se ordena arrastrando ---- */
+const KEY_ORDEN = 'insultiento-ranking';
+let mOrden = [];
+const ordenGuardado = {
+  get(){ try{ return JSON.parse(localStorage.getItem(KEY_ORDEN)||'[]') }catch(e){ return mOrden } },
+  set(v){ mOrden=v; try{ localStorage.setItem(KEY_ORDEN,JSON.stringify(v)) }catch(e){} }
 };
-let puntos = notas.get();
-let cartaDia = 0;
-function pintarCorazones(){
-  const v = puntos[cartaDia] || 0;
-  document.querySelectorAll('#hearts button').forEach(b=>b.classList.toggle('on', +b.dataset.v <= v));
-}
-document.querySelectorAll('#hearts button').forEach(b=>b.onclick = ()=>{
-  const v = +b.dataset.v;
-  if (puntos[cartaDia] === v) delete puntos[cartaDia]; else puntos[cartaDia] = v; // tocar el mismo otra vez lo quita
-  notas.set(puntos); pintarCorazones();
-});
-
+// Orden guardado + las abiertas nuevas al final (por fecha)
 function ranking(){
-  return Object.entries(puntos).map(([d,v])=>({d:+d, v}))
-    .filter(x=>abiertas.has(x.d) && frase(x.d))
-    .sort((a,b)=> b.v - a.v || a.d - b.d);
+  const vistas = d => abiertas.has(d) && frase(d);
+  const guardado = ordenGuardado.get().filter(vistas);
+  const nuevas = [...abiertas].filter(d=>vistas(d) && !guardado.includes(d)).sort((a,b)=>a-b);
+  return [...guardado, ...nuevas];
 }
+const lista = document.getElementById('rankList');
+function numerar(){ [...lista.children].forEach((li,i)=>li.querySelector('.pos').textContent = i+1) }
+function guardarOrden(){ ordenGuardado.set([...lista.children].map(li=>+li.dataset.d)) }
+
 function abrirRanking(){
-  const r = ranking(), lista = document.getElementById('rankList');
+  const r = ranking();
   lista.innerHTML = '';
-  r.forEach((x,i)=>{
+  r.forEach(d=>{
     const li = document.createElement('li');
-    li.innerHTML = `<span class="pos">${i+1}</span><span class="txt"></span>`;
-    li.querySelector('.txt').textContent = frase(x.d);
+    li.dataset.d = d;
+    li.innerHTML = `<span class="pos"></span><span class="txt"></span><span class="asa" aria-label="Arrastrar">☰</span>`;
+    li.querySelector('.txt').textContent = frase(d);
     const meta = document.createElement('span'); meta.className = 'meta';
-    meta.textContent = `${'❤️'.repeat(x.v)}  ·  ${ESPECIALES[x.d] ? ESPECIALES[x.d]+' · ' : ''}${fechaTexto(x.d)}`;
+    meta.textContent = (ESPECIALES[d] ? ESPECIALES[d]+' · ' : '') + fechaTexto(d);
     li.querySelector('.txt').appendChild(meta);
+    li.querySelector('.asa').addEventListener('pointerdown', e=>empezarArrastre(e, li));
     lista.appendChild(li);
   });
-  const sinNota = [...abiertas].filter(d=>!puntos[d]).length;
-  document.getElementById('rankSub').textContent = r.length
-    ? `${r.length} frase${r.length>1?'s':''} puntuada${r.length>1?'s':''}` + (sinNota ? ` · ${sinNota} sin puntuar` : '')
-    : '';
+  numerar(); guardarOrden();
+  document.getElementById('rankSub').textContent = r.length ? `${r.length} frase${r.length>1?'s':''} abierta${r.length>1?'s':''}` : '';
   document.getElementById('rankEmpty').style.display = r.length ? 'none' : 'block';
+  document.getElementById('rankAyuda').style.display = r.length > 1 ? '' : 'none';
   document.getElementById('rankShare').style.display = r.length ? '' : 'none';
   document.getElementById('rank').classList.add('show');
 }
+
+// Arrastre hecho a mano con pointer events (funciona con el dedo en iPhone)
+let arr = null;
+function empezarArrastre(e, li){
+  e.preventDefault();
+  arr = { li, id: e.pointerId, y: e.clientY, scroll: 0 };
+  li.classList.add('arrastrando');
+  li.querySelector('.asa').setPointerCapture(e.pointerId);
+  arr.scroll = requestAnimationFrame(autoScroll);
+}
+function moverArrastre(e){
+  if (!arr || e.pointerId !== arr.id) return;
+  arr.y = e.clientY;
+  recolocar();
+}
+function recolocar(){
+  const { li, y } = arr;
+  const prev = li.previousElementSibling, next = li.nextElementSibling;
+  if (prev){ const r = prev.getBoundingClientRect(); if (y < r.top + r.height/2){ lista.insertBefore(li, prev); numerar(); return } }
+  if (next){ const r = next.getBoundingClientRect(); if (y > r.top + r.height/2){ lista.insertBefore(next, li); numerar(); } }
+}
+function autoScroll(){ // si el dedo está cerca del borde, desplaza la lista
+  if (!arr) return;
+  const r = lista.getBoundingClientRect(), margen = 50;
+  if (arr.y < r.top + margen) lista.scrollTop -= 8;
+  else if (arr.y > r.bottom - margen) lista.scrollTop += 8;
+  recolocar();
+  arr.scroll = requestAnimationFrame(autoScroll);
+}
+function soltarArrastre(e){
+  if (!arr || e.pointerId !== arr.id) return;
+  cancelAnimationFrame(arr.scroll);
+  arr.li.classList.remove('arrastrando');
+  arr = null;
+  guardarOrden();
+}
+document.addEventListener('pointermove', moverArrastre);
+document.addEventListener('pointerup', soltarArrastre);
+document.addEventListener('pointercancel', soltarArrastre);
+
 async function enviarRanking(){
   const r = ranking();
   const texto = '🏆 Mi ranking de Insultiento\n\n' +
-    r.map((x,i)=>`${i+1}. ${'❤️'.repeat(x.v)} (${fechaTexto(x.d)})\n“${frase(x.d)}”`).join('\n\n');
+    r.map((d,i)=>`${i+1}. (${fechaTexto(d)})\n“${frase(d)}”`).join('\n\n');
   if (navigator.share){
     try{ await navigator.share({ text: texto }); return }catch(e){ if (e.name === 'AbortError') return }
   }
@@ -605,7 +635,7 @@ function cerrarPuerta(){
 const pv = document.getElementById('pv'), pvLbl = document.getElementById('pvLbl');
 function etiqueta(v){ return v==0 ? '30 de noviembre' : v>TOTAL ? '7 de enero' : fechaTexto(v) }
 pv.oninput = ()=>{ simulado = +pv.value; pvLbl.textContent = etiqueta(simulado); pintar() };
-document.getElementById('pvReset').onclick = ()=>{ abiertas = new Set(); store.set([]); puntos = {}; notas.set({}); pintar(); toast('Casillas cerradas y ranking borrado') };
+document.getElementById('pvReset').onclick = ()=>{ abiertas = new Set(); store.set([]); ordenGuardado.set([]); pintar(); toast('Casillas cerradas y ranking borrado') };
 if (!MODO_MAQUETA) document.getElementById('preview').remove();
 
 /* ---- nieve ---- */
