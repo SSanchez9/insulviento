@@ -200,12 +200,12 @@
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 
   /* ---------- Carta / modal ---------- */
-  #modal{
+  #modal,#rank{
     position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:22px;
     background:rgba(10,4,8,.7);backdrop-filter:blur(4px);
     opacity:0;visibility:hidden;transition:opacity .35s, visibility 0s linear .35s
   }
-  #modal.show{opacity:1;visibility:visible;transition:opacity .35s}
+  #modal.show,#rank.show{opacity:1;visibility:visible;transition:opacity .35s}
   .card{
     width:min(100%,380px);border-radius:18px;padding:30px 24px 22px;text-align:center;position:relative;
     background:
@@ -215,7 +215,7 @@
     box-shadow:0 0 0 6px var(--granate), 0 0 0 8px var(--dorado), 0 30px 60px rgba(0,0,0,.6);
     transform:scale(.85) rotate(-2deg);transition:transform .45s cubic-bezier(.3,1.5,.5,1)
   }
-  #modal.show .card{transform:none}
+  #modal.show .card,#rank.show .card{transform:none}
   .card .day{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--rojo);font-weight:800}
   .card .bignum{font-family:'Cinzel Decorative',serif;font-weight:900;font-size:58px;line-height:1;color:var(--verde);margin:4px 0 10px}
   .card .phrase{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:23px;line-height:1.3}
@@ -225,6 +225,29 @@
     background:linear-gradient(180deg,#e0334f,var(--rojo));color:#fff;box-shadow:0 4px 0 #7a0c1f;cursor:pointer
   }
   .card button:active{transform:translateY(2px);box-shadow:0 2px 0 #7a0c1f}
+
+  /* ---------- Puntuación y ranking ---------- */
+  .rate-lbl{margin-top:18px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--rojo);font-weight:800}
+  .hearts{display:flex;justify-content:center;gap:4px;margin-top:6px}
+  .card .hearts button{margin:0;padding:4px;background:none;box-shadow:none;border-radius:8px;font-size:28px;line-height:1;
+    filter:grayscale(1);opacity:.35;transition:transform .15s, opacity .15s, filter .15s}
+  .card .hearts button.on{filter:none;opacity:1}
+  .card .hearts button:active{transform:scale(1.25);box-shadow:none}
+  .rank-btn{display:block;margin:-6px auto 18px;border:1px solid var(--dorado);background:rgba(0,0,0,.25);color:var(--dorado-claro);
+    border-radius:999px;padding:9px 18px;font:800 14px 'Mulish',sans-serif;cursor:pointer}
+  #rank .card{max-height:calc(100vh - 60px);max-height:calc(100dvh - 60px);display:flex;flex-direction:column;padding-top:26px}
+  #rank h3{font-family:'Cinzel Decorative',serif;font-weight:900;font-size:24px;color:var(--verde);margin-bottom:4px}
+  #rank .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px}
+  #rankList{list-style:none;overflow-y:auto;margin:14px -6px 0;padding:0 6px;text-align:left;flex:1}
+  #rankList li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed rgba(94,11,23,.25)}
+  #rankList .pos{font-family:'Cinzel Decorative',serif;font-weight:900;font-size:20px;color:var(--dorado);min-width:30px;text-align:center}
+  #rankList li:nth-child(1) .pos{color:#c9971c;font-size:24px}
+  #rankList .txt{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:17px;line-height:1.25}
+  #rankList .meta{display:block;font:700 11px 'Mulish',sans-serif;font-style:normal;color:var(--rojo);letter-spacing:.05em;margin-top:3px}
+  #rankEmpty{margin-top:16px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:19px}
+  #rank .acciones{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  #rank .acciones button{margin-top:16px}
+  #rank .acciones .sec{background:none;color:var(--granate);border:2px solid var(--granate);box-shadow:none}
 
   #toast{
     position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:45;
@@ -327,6 +350,7 @@
     </div>
   </header>
   <div class="status" id="status"></div>
+  <button class="rank-btn" id="rankOpen">🏆 Mi ranking</button>
   <div class="grid" id="grid"></div>
   <footer>Hecho con amor, paciencia y bastante rencor navideño ✦</footer>
 </main>
@@ -342,7 +366,25 @@
     <div class="day" id="mDayLbl">Día</div>
     <div class="bignum" id="mNum">1</div>
     <p class="phrase" id="mPhrase"></p>
+    <div class="rate-lbl">¿Cuánto te ha gustado?</div>
+    <div class="hearts" id="hearts">
+      <button data-v="1" aria-label="1 de 5">❤️</button><button data-v="2" aria-label="2 de 5">❤️</button><button data-v="3" aria-label="3 de 5">❤️</button><button data-v="4" aria-label="4 de 5">❤️</button><button data-v="5" aria-label="5 de 5">❤️</button>
+    </div>
     <button id="mClose">Vale, me lo merezco</button>
+  </div>
+</div>
+
+<!-- ============ RANKING ============ -->
+<div id="rank" class="overlay" role="dialog" aria-modal="true">
+  <div class="card">
+    <h3>Mi ranking</h3>
+    <div class="sub" id="rankSub"></div>
+    <ol id="rankList"></ol>
+    <div id="rankEmpty">Todavía no has puntuado ninguna frase. Ábrelas y dales corazones ❤️</div>
+    <div class="acciones">
+      <button id="rankShare">Enviar mi ranking</button>
+      <button class="sec" id="rankClose">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -468,10 +510,69 @@ function abrirCarta(d){
   document.getElementById('mNum').textContent = numDia(d);
   document.getElementById('mPhrase').textContent = frase(d) || '🎁 Frase en camino… (pendiente de elegir)';
   document.getElementById('mClose').textContent = d===37 ? 'Felices Reyes a ti también' : 'Vale, me lo merezco';
+  cartaDia = d; pintarCorazones();
   document.getElementById('modal').classList.add('show');
 }
 document.getElementById('mClose').onclick = ()=>document.getElementById('modal').classList.remove('show');
 document.getElementById('modal').onclick = e=>{ if(e.target.id==='modal') e.currentTarget.classList.remove('show') };
+
+/* ---- puntuación (1-5 corazones) y ranking ---- */
+const KEY_NOTAS = 'insultiento-notas';
+let mNotas = {};
+const notas = {
+  get(){ try{ return JSON.parse(localStorage.getItem(KEY_NOTAS)||'{}') }catch(e){ return mNotas } },
+  set(v){ mNotas=v; try{ localStorage.setItem(KEY_NOTAS,JSON.stringify(v)) }catch(e){} }
+};
+let puntos = notas.get();
+let cartaDia = 0;
+function pintarCorazones(){
+  const v = puntos[cartaDia] || 0;
+  document.querySelectorAll('#hearts button').forEach(b=>b.classList.toggle('on', +b.dataset.v <= v));
+}
+document.querySelectorAll('#hearts button').forEach(b=>b.onclick = ()=>{
+  const v = +b.dataset.v;
+  if (puntos[cartaDia] === v) delete puntos[cartaDia]; else puntos[cartaDia] = v; // tocar el mismo otra vez lo quita
+  notas.set(puntos); pintarCorazones();
+});
+
+function ranking(){
+  return Object.entries(puntos).map(([d,v])=>({d:+d, v}))
+    .filter(x=>abiertas.has(x.d) && frase(x.d))
+    .sort((a,b)=> b.v - a.v || a.d - b.d);
+}
+function abrirRanking(){
+  const r = ranking(), lista = document.getElementById('rankList');
+  lista.innerHTML = '';
+  r.forEach((x,i)=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="pos">${i+1}</span><span class="txt"></span>`;
+    li.querySelector('.txt').textContent = frase(x.d);
+    const meta = document.createElement('span'); meta.className = 'meta';
+    meta.textContent = `${'❤️'.repeat(x.v)}  ·  ${ESPECIALES[x.d] ? ESPECIALES[x.d]+' · ' : ''}${fechaTexto(x.d)}`;
+    li.querySelector('.txt').appendChild(meta);
+    lista.appendChild(li);
+  });
+  const sinNota = [...abiertas].filter(d=>!puntos[d]).length;
+  document.getElementById('rankSub').textContent = r.length
+    ? `${r.length} frase${r.length>1?'s':''} puntuada${r.length>1?'s':''}` + (sinNota ? ` · ${sinNota} sin puntuar` : '')
+    : '';
+  document.getElementById('rankEmpty').style.display = r.length ? 'none' : 'block';
+  document.getElementById('rankShare').style.display = r.length ? '' : 'none';
+  document.getElementById('rank').classList.add('show');
+}
+async function enviarRanking(){
+  const r = ranking();
+  const texto = '🏆 Mi ranking de Insultiento\n\n' +
+    r.map((x,i)=>`${i+1}. ${'❤️'.repeat(x.v)} (${fechaTexto(x.d)})\n“${frase(x.d)}”`).join('\n\n');
+  if (navigator.share){
+    try{ await navigator.share({ text: texto }); return }catch(e){ if (e.name === 'AbortError') return }
+  }
+  location.href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+}
+document.getElementById('rankOpen').onclick = abrirRanking;
+document.getElementById('rankShare').onclick = enviarRanking;
+document.getElementById('rankClose').onclick = ()=>document.getElementById('rank').classList.remove('show');
+document.getElementById('rank').onclick = e=>{ if(e.target.id==='rank') e.currentTarget.classList.remove('show') };
 
 let tt;
 function toast(t){
@@ -494,6 +595,7 @@ function cerrarPuerta(){
   els[1].classList.remove('gone');
   els[2].classList.remove('show');
   document.getElementById('modal').classList.remove('show');
+  document.getElementById('rank').classList.remove('show');
   void document.body.offsetWidth; // aplicar sin animar
   [...els, ...leaves].forEach(e=>e.style.transition='');
   window.scrollTo(0,0);
@@ -503,7 +605,7 @@ function cerrarPuerta(){
 const pv = document.getElementById('pv'), pvLbl = document.getElementById('pvLbl');
 function etiqueta(v){ return v==0 ? '30 de noviembre' : v>TOTAL ? '7 de enero' : fechaTexto(v) }
 pv.oninput = ()=>{ simulado = +pv.value; pvLbl.textContent = etiqueta(simulado); pintar() };
-document.getElementById('pvReset').onclick = ()=>{ abiertas = new Set(); store.set([]); pintar(); toast('Todas las casillas cerradas otra vez') };
+document.getElementById('pvReset').onclick = ()=>{ abiertas = new Set(); store.set([]); puntos = {}; notas.set({}); pintar(); toast('Casillas cerradas y ranking borrado') };
 if (!MODO_MAQUETA) document.getElementById('preview').remove();
 
 /* ---- nieve ---- */
