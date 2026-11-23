@@ -470,7 +470,7 @@ function pintar(){
   ORDEN.forEach((d,i)=>{
     const b = document.createElement('button');
     const disponible = d <= hoy;
-    const abierta = abiertas.has(d);
+    const abierta = disponible && abiertas.has(d); // un día futuro siempre se ve cerrado
     b.className = 'tile ' + COLORES[(i*3+d)%COLORES.length] + (GRANDES.includes(d)?' big':'') +
       (abierta ? ' open' : disponible ? ' ready' : ' locked');
     const ico = d===37?'👑':d===24?'🎁':d===31?'🥂':['⭐','🎄','🔔','❄️','🍪','🕯️'][d%6];
@@ -523,7 +523,7 @@ const ordenGuardado = {
 };
 // Orden guardado + las abiertas nuevas al final (por fecha)
 function ranking(){
-  const vistas = d => abiertas.has(d) && frase(d);
+  const hoy = diaEfectivo(), vistas = d => d <= hoy && abiertas.has(d) && frase(d);
   const guardado = ordenGuardado.get().filter(vistas);
   const nuevas = [...abiertas].filter(d=>vistas(d) && !guardado.includes(d)).sort((a,b)=>a-b);
   return [...guardado, ...nuevas];
